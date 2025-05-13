@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miss you</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #ffecd2, #fcb69f);
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            margin: 50px auto;
+            max-width: 600px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            font-size: 36px;
+            color: #444;
+        }
+
+        .textbox {
+            width: 80%;
+            padding: 10px;
+            margin: 20px auto;
+            display: block;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .submit-btn, .logout-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 18px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .submit-btn:hover, .logout-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .quote, .letter {
+            font-size: 20px;
+            font-style: italic;
+            color: #444;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Page -->
+    <div id="welcomePage" class="container">
+        <h2>Welcome!</h2>
+        <p>Igbo: Nnọọ!</p>
+        <p>Hausa: Sannu!</p>
+        <p>Yoruba: Ẹ ku abọ!</p>
+        <p>Spanish: ¡Bienvenido!</p>
+        <button class="submit-btn" onclick="goToLoginOrCreate()">Continue</button>
+    </div>
+
+    <!-- Login or Create Account Page -->
+    <div id="loginOrCreatePage" class="hidden container">
+        <h2>What would you like to do?</h2>
+        <button class="submit-btn" onclick="showLogin()">Login</button>
+        <button class="submit-btn" onclick="showCreateAccount()">Create Account</button>
+    </div>
+
+    <!-- Login Section -->
+    <div id="loginSection" class="hidden container">
+        <h2>Login</h2>
+        <input type="text" id="loginUserName" class="textbox" placeholder="Enter your name">
+        <input type="password" id="loginUserPassword" class="textbox" placeholder="Enter your password">
+        <button class="submit-btn" onclick="login()">Login</button>
+        <button class="logout-btn" onclick="goBackToLoginOrCreate()">Back</button>
+        <button class="submit-btn" onclick="showForgotPassword()">Forgot Password?</button>
+    </div>
+
+    <!-- Forgot Password Section -->
+    <div id="forgotPasswordSection" class="hidden container">
+        <h2>Reset Password</h2>
+        <input type="text" id="forgotUserName" class="textbox" placeholder="Enter your name">
+        <input type="password" id="newUserPassword" class="textbox" placeholder="Enter your new password">
+        <button class="submit-btn" onclick="resetPassword()">Reset Password</button>
+        <button class="logout-btn" onclick="goBackToLoginOrCreate()">Back</button>
+    </div>
+
+    <!-- Create Account Section -->
+    <div id="createAccountSection" class="hidden container">
+        <h2>Create Account</h2>
+        <input type="text" id="createUserName" class="textbox" placeholder="Enter your name">
+        <input type="password" id="createUserPassword" class="textbox" placeholder="Enter your password">
+        <button class="submit-btn" onclick="createAccount()">Create Account</button>
+        <button class="logout-btn" onclick="goBackToLoginOrCreate()">Back</button>
+    </div>
+
+    <!-- Main Question Section -->
+    <div id="mainQuestionSection" class="hidden container">
+        <h2 id="welcomeMessage">Are <span style="color: #f77;">you</span> fine?</h2>
+        <a id="no" href="#" onclick="showNo()" style="color: red; margin-bottom: 2px; padding: 10px 20px; border: 3px solid red; border-radius: 10px;">No</a>
+        <a id="yes" href="#" onclick="showYes()" style="color: green; margin-bottom: 2px; padding: 10px 20px; border: 3px solid green; border-radius: 10px;">Yes</a>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Quotes Section -->
+    <div id="quotesSection" class="hidden container">
+        <h2>Here’s something to inspire you:</h2>
+        <p id="quoteText" class="quote"></p>
+        <button class="submit-btn" onclick="askForLetter()">Do you want a personalized letter?</button>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Letter Section -->
+    <div id="letterSection" class="hidden container">
+        <h2>A Letter for You</h2>
+        <p id="personalizedLetter" class="letter"></p>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        let db;
+        let loggedInUser = ""; // Store the logged-in user's name
+
+        const quotes = [
+            "For I know the plans I have for you, declares the Lord, plans for welfare and not for evil, to give you a future and a hope. - Jeremiah 29:11",
+            "I can do all things through Christ who strengthens me. - Philippians 4:13",
+            "The Lord is my light and my salvation; whom shall I fear? - Psalm 27:1",
+            "Come to me, all who labor and are heavy laden, and I will give you rest. - Matthew 11:28"
+        ];
+
+        // Open IndexedDB
+        const request = indexedDB.open("UserDatabase", 1);
+
+        request.onupgradeneeded = function (event) {
+            db = event.target.result;
+            const userStore = db.createObjectStore("users", { keyPath: "name" });
+            userStore.createIndex("password", "password", { unique: false });
+        };
+
+        request.onsuccess = function (event) {
+            db = event.target.result;
+        };
+
+        request.onerror = function (event) {
+            console.error("IndexedDB error:", event.target.errorCode);
+        };
+
+        // Navigation Functions
+        function goToLoginOrCreate() {
+            document.getElementById("welcomePage").classList.add("hidden");
+            document.getElementById("loginOrCreatePage").classList.remove("hidden");
+        }
+
+        function showLogin() {
+            document.getElementById("loginOrCreatePage").classList.add("hidden");
+            document.getElementById("loginSection").classList.remove("hidden");
+        }
+
+        function showCreateAccount() {
+            document.getElementById("loginOrCreatePage").classList.add("hidden");
+            document.getElementById("createAccountSection").classList.remove("hidden");
+        }
+
+        function goBackToLoginOrCreate() {
+            document.getElementById("loginSection").classList.add("hidden");
+            document.getElementById("createAccountSection").classList.add("hidden");
+            document.getElementById("forgotPasswordSection").classList.add("hidden");
+            document.getElementById("loginOrCreatePage").classList.remove("hidden");
+        }
+
+        function showForgotPassword() {
+            document.getElementById("loginSection").classList.add("hidden");
+            document.getElementById("forgotPasswordSection").classList.remove("hidden");
+        }
+
+        // Create Account
+        function createAccount() {
+            const userName = document.getElementById("createUserName").value.trim();
+            const userPassword = document.getElementById("createUserPassword").value.trim();
+
+            if (userName === "" || userPassword === "") {
+                alert("Please enter both your name and password.");
+                return;
+            }
+
+            const transaction = db.transaction(["users"], "readwrite");
+            const store = transaction.objectStore("users");
+
+            const request = store.get(userName);
+            request.onsuccess = function (event) {
+                const user = event.target.result;
+                if (user) {
+                    alert("User already exists. Please choose a different name.");
+                } else {
+                    store.add({ name: userName, password: userPassword });
+                    alert(`Account created successfully for ${userName}!`);
+                    goBackToLoginOrCreate();
+                }
+            };
+        }
+
+        // Login
+        function login() {
+            const userName = document.getElementById("loginUserName").value.trim();
+            const userPassword = document.getElementById("loginUserPassword").value.trim();
+
+            if (userName === "" || userPassword === "") {
+                alert("Please enter both your name and password.");
+                return;
+            }
+
+            const transaction = db.transaction(["users"], "readonly");
+            const store = transaction.objectStore("users");
+
+            const request = store.get(userName);
+            request.onsuccess = function (event) {
+                const user = event.target.result;
+                if (user) {
+                    if (user.password === userPassword) {
+                        loggedInUser = userName; // Store the logged-in user's name
+                        alert(`Welcome back, ${userName}!`);
+                        // Transition to the main question section
+                        document.getElementById("loginSection").classList.add("hidden");
+                        document.getElementById("mainQuestionSection").classList.remove("hidden");
+                        document.getElementById("welcomeMessage").innerText = `Hello, ${userName}! Are you fine?`;
+                    } else {
+                        alert("Incorrect password. Please try again.");
+                    }
+                } else {
+                    alert("User not found. Please create an account.");
+                }
+            };
+        }
+
+        function resetPassword() {
+            const userName = document.getElementById("forgotUserName").value.trim();
+            const newPassword = document.getElementById("newUserPassword").value.trim();
+
+            if (userName === "" || newPassword === "") {
+                alert("Please enter both your name and new password.");
+                return;
+            }
+
+            const transaction = db.transaction(["users"], "readwrite");
+            const store = transaction.objectStore("users");
+
+            const request = store.get(userName);
+            request.onsuccess = function (event) {
+                const user = event.target.result;
+                if (user) {
+                    user.password = newPassword; // Update the password
+                    store.put(user); // Save the updated user object
+                    alert("Password reset successfully! Please log in with your new password.");
+                    goBackToLoginOrCreate();
+                } else {
+                    alert("User not found. Please check your name or create an account.");
+                }
+            };
+        }
+
+        function showYes() {
+            alert("Glad to hear you're fine!");
+        }
+
+        function showNo() {
+            document.getElementById("mainQuestionSection").classList.add("hidden");
+            document.getElementById("quotesSection").classList.remove("hidden");
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById("quoteText").innerText = randomQuote;
+        }
+
+        function askForLetter() {
+            document.getElementById("quotesSection").classList.add("hidden");
+            document.getElementById("letterSection").classList.remove("hidden");
+            document.getElementById("personalizedLetter").innerText = `
+                Dear ${loggedInUser},\n\n
+                This is Stephanie. I want you to know that no matter what you're going through, you will be fine. 
+                You are stronger than you think, and brighter days are ahead. Keep believing in yourself, and never lose hope.\n\n
+                With love,\n
+                Stephanie
+            `;
+        }
+
+        function logout() {
+            document.getElementById("mainQuestionSection").classList.add("hidden");
+            document.getElementById("quotesSection").classList.add("hidden");
+            document.getElementById("letterSection").classList.add("hidden");
+            document.getElementById("loginOrCreatePage").classList.remove("hidden");
+            loggedInUser = ""; // Clear the logged-in user's name
+        }
+    </script>
+</body>
+</html>
